@@ -1,0 +1,44 @@
+﻿<Window x:Class="Konverter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        TextOptions.TextFormattingMode="Ideal" 
+        TextOptions.TextRenderingMode="Auto"        
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <Label Grid.Row="0" Grid.Column="0" Content="Excel Ablauf" Margin="5" />
+      <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ExcelSheetFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
+      <Button Grid.Row="0" Grid.Column="2" Content="..." Command="{Binding BrowseExcelCommand}" MaxWidth="100" Margin="5" />
+
+      <Label Grid.Row="1" Grid.Column="0" Content="POTX Vorlage Stream" Margin="5" />
+      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StreamTemplateFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
+      <Button Grid.Row="1" Grid.Column="2" Content="..." Command="{Binding BrowseStreamCommand}" MaxWidth="100" Margin="5" />
+
+      <Label Grid.Row="2" Grid.Column="0" Content="POTX Vorlage Beamer" Margin="5" />
+      <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BeamerTemplateFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
+      <Button Grid.Row="2" Grid.Column="2" Content="..." Command="{Binding BrowseBeamerCommand}" MaxWidth="100" Margin="5" />
+
+      <Button Grid.Row="3" Content="PowerPoints erzeugen" Command="{Binding CreateCommand}" MaxWidth="100" Margin="5" />
+    </Grid>
+</Window>
