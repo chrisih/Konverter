@@ -14,19 +14,18 @@ public class SingleRowConverter
   private readonly string? _footer;
   private readonly string? _author;
   private readonly string? _copyright;
+  private Presentation _presentation;
+  private Action<Action> _iterator;
 
   public SingleRowConverter(Range typeCell, Range titleCell, Range contentCell, Range footerCell, Range authorCell, Range copyrightCell, List<CustomLayout> layouts)
   {
     _layout = layouts.Single(l => l.Name == typeCell.Value.ToString());
-    _title = titleCell.Value?.ToString();
-    _content = contentCell.Value?.ToString();
-    _footer = footerCell.Value?.ToString();
-    _author = authorCell.Value?.ToString();
-    _copyright = copyrightCell.Value?.ToString();
+    _title = titleCell.Value?.ToString() ?? string.Empty;
+    _content = contentCell.Value?.ToString() ?? string.Empty;
+    _footer = footerCell.Value?.ToString() ?? string.Empty;
+    _author = authorCell.Value?.ToString() ?? string.Empty;
+    _copyright = copyrightCell.Value?.ToString() ?? string.Empty;
   }
-
-  private Presentation _presentation;
-  private Action<Action> _iterator;
 
   public void Convert(Presentation p, Action<Action> iterator)
   {
@@ -35,10 +34,10 @@ public class SingleRowConverter
 
     switch (_layout.Name)
     {
-      case "Band-Lied":
+      case Constants.Bandlied:
         ImportPowerPoint();
         break;
-      case "Predigt_mit_Folie":
+      case Constants.Bildpredigt:
         ImportPowerPoint();
         break;
       default:
@@ -49,25 +48,30 @@ public class SingleRowConverter
 
   private void ImportPowerPoint()
   {
+    if (string.IsNullOrWhiteSpace(_content))
+    {
+      var idx = _presentation.Slides.Count + 1;
+      var targetSlide = _presentation.Slides.AddSlide(idx, _layout);
+      return;
+    }
+
     _iterator(() => { });
     var toImport = _presentation.Application.Presentations.Open(_content, MsoTriState.msoCTrue, MsoTriState.msoCTrue, MsoTriState.msoFalse);
 
     foreach (Slide sourceSlide in toImport.Slides)
     {
       _iterator(() => { });
-      var tmpFile = Path.GetTempFileName();
-      sourceSlide.Shapes.Range().Export(tmpFile, PpShapeFormat.ppShapeFormatPNG, 0, 0, PpExportMode.ppClipRelativeToSlide);
+      sourceSlide.Copy();
 
       _iterator(() => { });
       var idx = _presentation.Slides.Count + 1;
       var targetSlide = _presentation.Slides.AddSlide(idx, _layout);
-      
-      foreach (Shape shape in targetSlide.CustomLayout.Shapes)
+
+      var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
+
+      foreach (Shape shape in shapes)
       {
-        if (shape.Name == "Bild")
-          targetSlide.Shapes.AddPicture2(tmpFile, MsoTriState.msoFalse, MsoTriState.msoCTrue, shape.Left, shape.Top, shape.Width, shape.Height, MsoPictureCompress.msoPictureCompressTrue);
-        else
-          SetBasicShapeValues(shape);
+        SetBasicShapeValues(shape, targetSlide);
       }
 
       targetSlide.CustomLayout = _layout;
@@ -76,29 +80,49 @@ public class SingleRowConverter
     toImport.Close();
   }
 
-  private void SetBasicShapeValues(Shape shape)
+  private string GetShapeName(Shape generatedShape)
   {
-    if (shape.Name == "Titel")
+    foreach(Shape shape in _layout.Shapes)
+      if(shape.Top == generatedShape.Top && shape.Left == generatedShape.Left && shape.Width == shape.Width && shape.Height == shape.Height)
+        return shape.Name;
+    return null;
+  }
+
+  private void SetBasicShapeValues(Shape shape, Slide slide)
+  {
+    var shapeName = GetShapeName(shape);
+    if (shapeName == null)
+      return;
+
+    if (shapeName == $"{_layout.Name}_{Constants.Titel}")
     {
       shape.TextFrame2.TextRange.Text = _title;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shape.Name == "Untertitel")
+    else if (shapeName == $"{_layout.Name}_{Constants.Bild}")
+    {
+      var pastedShape = slide.Shapes.PasteSpecial(DataType: PpPasteDataType.ppPasteBitmap)[1];
+      pastedShape.Left = shape.Left;
+      pastedShape.Width = shape.Width;
+      pastedShape.Height = shape.Height;
+      pastedShape.Top = shape.Top;
+    }
+    else if (shapeName == $"{_layout.Name}_{Constants.Untertitel}")
     {
       shape.TextFrame2.TextRange.Text = _footer;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shape.Name == "Inhalt")
+    else if (shapeName == $"{_layout.Name}_{Constants.Inhalt}")
     {
       shape.TextFrame2.TextRange.Text = _content;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shape.Name == "Autor")
+    else if (shapeName == $"{_layout.Name}_{Constants.Autor}")
     {
       shape.TextFrame2.TextRange.Text = _author;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shape.Name == "Copyright")
+    else if (shapeName == $"{_layout.Name}_{Constants.Copyright}")
     {
       shape.TextFrame2.TextRange.Text = _copyright;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
@@ -111,10 +135,11 @@ public class SingleRowConverter
 
     var idx = _presentation.Slides.Count + 1;
     var targetSlide = _presentation.Slides.AddSlide(idx, _layout);
+    var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
 
-    foreach (Shape shape in targetSlide.CustomLayout.Shapes)
+    foreach (Shape shape in shapes)
     {
-      SetBasicShapeValues(shape);
+      SetBasicShapeValues(shape, targetSlide);
     }
 
     targetSlide.CustomLayout = _layout;

@@ -12,13 +12,11 @@ public class Converter : ViewModelBase
 {
   private readonly string _excelFile;
   private readonly string _templateFile;
-  private readonly PptTarget _target;
-
-  public Converter(string excelFile, string templateFile, PptTarget target)
+  
+  public Converter(string excelFile, string templateFile)
   {
     _excelFile = excelFile;
     _templateFile = templateFile;
-    _target = target;
   }
 
   public async Task Convert()
@@ -33,21 +31,23 @@ public class Converter : ViewModelBase
     Execute(() => CustomLayouts = GetLayouts().ToList());
 
     IterateAndCreateSlides();
+    
+    Schedule.Close();
+    Excel.Quit();
   }
 
   private void IterateAndCreateSlides()
   {
-    var col = _target == PptTarget.Stream ? "B" : "C";
     for (int rowNum = 4; rowNum < 200; rowNum++)
     {
-      var typeCell = ProcessSheet.Range[$"{col}{rowNum}"];
+      var typeCell = ProcessSheet.Range[$"B{rowNum}"];
       if (typeCell.Value == null)
         continue;
-      var contentCell = ProcessSheet.Range[$"D{rowNum}"];
-      var titleCell = ProcessSheet.Range[$"E{rowNum}"];
-      var footerCell = ProcessSheet.Range[$"F{rowNum}"];
-      var authorCell = ProcessSheet.Range[$"G{rowNum}"];
-      var copyrightCell = ProcessSheet.Range[$"H{rowNum}"];
+      var contentCell = ProcessSheet.Range[$"C{rowNum}"];
+      var titleCell = ProcessSheet.Range[$"D{rowNum}"];
+      var footerCell = ProcessSheet.Range[$"E{rowNum}"];
+      var authorCell = ProcessSheet.Range[$"F{rowNum}"];
+      var copyrightCell = ProcessSheet.Range[$"G{rowNum}"];
       var converter = new SingleRowConverter(typeCell, titleCell, contentCell, footerCell, authorCell, copyrightCell, CustomLayouts);
       converter.Convert(Result, Execute);
     }

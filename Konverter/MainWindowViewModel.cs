@@ -65,13 +65,13 @@ namespace Konverter
     {
       if (File.Exists(StreamTemplateFileName))
       {
-        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName, PptTarget.Stream);
+        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName);
         await Converter.Convert();
       }
 
       if (File.Exists(BeamerTemplateFileName))
       {
-        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName, PptTarget.Beamer);
+        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName);
         await Converter.Convert();
       }
     }
