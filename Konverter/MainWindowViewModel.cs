@@ -2,6 +2,10 @@
 using System.Windows.Input;
 using DevExpress.Mvvm;
 using DevExpress.Mvvm.UI;
+using ShapeFormat = Microsoft.Office.Interop.PowerPoint.PpShapeFormat;
+using ExportMode= Microsoft.Office.Interop.PowerPoint.PpExportMode;
+using System.Windows.Shapes;
+using Microsoft.Office.Interop.PowerPoint;
 
 namespace Konverter
 {
@@ -61,18 +65,21 @@ namespace Konverter
         return false;
       return true;
     }
+
     private async Task Create()
     {
       if (File.Exists(StreamTemplateFileName))
       {
-        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName);
-        await Converter.Convert();
+        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName, false);
+        var presentation = Converter.Convert();
+        presentation.Slides[4].Shapes.Range().Export(@"C:\Users\chris\source\repos\chrisih\Konverter\Konverter\ppt.png", ShapeFormat.ppShapeFormatPNG, 0, 0, ExportMode.ppClipRelativeToSlide);
       }
 
       if (File.Exists(BeamerTemplateFileName))
       {
-        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName);
-        await Converter.Convert();
+        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName, true);
+        var presentation = Converter.Convert();
+        presentation.PageSetup.SlideSize = Microsoft.Office.Interop.PowerPoint.PpSlideSizeType.ppSlideSizeOnScreen;
       }
     }
 

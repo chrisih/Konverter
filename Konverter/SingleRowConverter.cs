@@ -1,8 +1,9 @@
-﻿using System.IO;
-using Microsoft.Office.Core;
+﻿using Microsoft.Office.Core;
 using Microsoft.Office.Interop.PowerPoint;
 using Range = Microsoft.Office.Interop.Excel.Range;
 using Shape = Microsoft.Office.Interop.PowerPoint.Shape;
+using System.Windows;
+using System.IO;
 
 namespace Konverter;
 
@@ -16,12 +17,14 @@ public class SingleRowConverter
   private readonly string? _copyright;
   private Presentation _presentation;
   private Action<Action> _iterator;
+  private readonly bool _pasteAsShape;
 
-  public SingleRowConverter(Range typeCell, Range titleCell, Range contentCell, Range footerCell, Range authorCell, Range copyrightCell, List<CustomLayout> layouts)
+  public SingleRowConverter(Range typeCell, Range titleCell, Range contentCell, Range footerCell, Range authorCell, Range copyrightCell, List<CustomLayout> layouts, bool pasteAsShape)
   {
+    _pasteAsShape = pasteAsShape;
     _layout = layouts.Single(l => l.Name == typeCell.Value.ToString());
     _title = titleCell.Value?.ToString() ?? string.Empty;
-    _content = contentCell.Value?.ToString() ?? string.Empty;
+    _content = contentCell.Value?.ToString() ?? _title;
     _footer = footerCell.Value?.ToString() ?? string.Empty;
     _author = authorCell.Value?.ToString() ?? string.Empty;
     _copyright = copyrightCell.Value?.ToString() ?? string.Empty;
@@ -40,32 +43,64 @@ public class SingleRowConverter
       case Constants.Bildpredigt:
         ImportPowerPoint();
         break;
+      case Constants.Bild:
+        if (string.IsNullOrWhiteSpace(_content))
+          return;
+        if(_content!.EndsWith(".ppt") || _content!.EndsWith(".pptx"))
+          ImportPowerPoint();
+        else
+          CreateSingleSlide();
+        break;
       default:
         CreateSingleSlide();
         break;
     }
   }
 
+  private Slide CreateTargetSlide()
+  {
+    var idx = _presentation.Slides.Count + 1;
+    var targetSlide = _presentation.Slides.Add(idx, PpSlideLayout.ppLayoutBlank);
+    if (_layout.Shapes.Count > 0)
+    {
+      _layout.Shapes.Range().Copy();
+      targetSlide.Shapes.Paste();
+      Clipboard.Clear();
+    }
+    return targetSlide;
+  }
+
   private void ImportPowerPoint()
   {
-    if (string.IsNullOrWhiteSpace(_content))
+    // no file --> show dummy slide
+    if (string.IsNullOrWhiteSpace(_content) || !File.Exists(_content))
     {
-      var idx = _presentation.Slides.Count + 1;
-      var targetSlide = _presentation.Slides.AddSlide(idx, _layout);
+      var targetSlide = CreateTargetSlide();
+      var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
+      foreach (Shape shape in shapes)
+        SetBasicShapeValues(shape, targetSlide);
       return;
     }
 
     _iterator(() => { });
+
+    // import possible
+    if (_pasteAsShape)
+    {
+      _presentation.Slides.InsertFromFile(_content, _presentation.Slides.Count);
+      return;
+    }
+
+    // import as image
     var toImport = _presentation.Application.Presentations.Open(_content, MsoTriState.msoCTrue, MsoTriState.msoCTrue, MsoTriState.msoFalse);
 
     foreach (Slide sourceSlide in toImport.Slides)
     {
       _iterator(() => { });
-      sourceSlide.Copy();
+      var targetSlide = CreateTargetSlide();
 
       _iterator(() => { });
-      var idx = _presentation.Slides.Count + 1;
-      var targetSlide = _presentation.Slides.AddSlide(idx, _layout);
+      sourceSlide.Copy();
 
       var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
 
@@ -73,14 +108,12 @@ public class SingleRowConverter
       {
         SetBasicShapeValues(shape, targetSlide);
       }
-
-      targetSlide.CustomLayout = _layout;
     }
 
     toImport.Close();
   }
 
-  private string GetShapeName(Shape generatedShape)
+  private string? GetShapeName(Shape generatedShape)
   {
     foreach(Shape shape in _layout.Shapes)
       if(shape.Top == generatedShape.Top && shape.Left == generatedShape.Left && shape.Width == shape.Width && shape.Height == shape.Height)
@@ -94,35 +127,43 @@ public class SingleRowConverter
     if (shapeName == null)
       return;
 
-    if (shapeName == $"{_layout.Name}_{Constants.Titel}")
+    if (shapeName == $"{Constants.Titel}")
     {
       shape.TextFrame2.TextRange.Text = _title;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shapeName == $"{_layout.Name}_{Constants.Bild}")
+    else if (shapeName == $"{Constants.Bild}")
     {
-      var pastedShape = slide.Shapes.PasteSpecial(DataType: PpPasteDataType.ppPasteBitmap)[1];
-      pastedShape.Left = shape.Left;
+      if (!Clipboard.ContainsImage())
+        return;
+      var pastedShape = slide.Shapes.PasteSpecial(DataType: PpPasteDataType.ppPastePNG)[1];
+      try
+      {
+        Clipboard.Clear();
+      }
+      catch { }
       pastedShape.Width = shape.Width;
       pastedShape.Height = shape.Height;
+      pastedShape.Left = shape.Left;
       pastedShape.Top = shape.Top;
+      shape.Delete();
     }
-    else if (shapeName == $"{_layout.Name}_{Constants.Untertitel}")
+    else if (shapeName == $"{Constants.Untertitel}")
     {
       shape.TextFrame2.TextRange.Text = _footer;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shapeName == $"{_layout.Name}_{Constants.Inhalt}")
+    else if (shapeName == $"{Constants.Inhalt}")
     {
       shape.TextFrame2.TextRange.Text = _content;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shapeName == $"{_layout.Name}_{Constants.Autor}")
+    else if (shapeName == $"{Constants.Autor}")
     {
       shape.TextFrame2.TextRange.Text = _author;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
     }
-    else if (shapeName == $"{_layout.Name}_{Constants.Copyright}")
+    else if (shapeName == $"{Constants.Copyright}")
     {
       shape.TextFrame2.TextRange.Text = _copyright;
       shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
@@ -133,16 +174,13 @@ public class SingleRowConverter
   {
     _iterator(() => { });
 
-    var idx = _presentation.Slides.Count + 1;
-    var targetSlide = _presentation.Slides.AddSlide(idx, _layout);
+    var targetSlide = CreateTargetSlide();
     var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
 
     foreach (Shape shape in shapes)
     {
       SetBasicShapeValues(shape, targetSlide);
     }
-
-    targetSlide.CustomLayout = _layout;
 
     _iterator(() => { });
   }

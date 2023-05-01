@@ -12,14 +12,16 @@ public class Converter : ViewModelBase
 {
   private readonly string _excelFile;
   private readonly string _templateFile;
-  
-  public Converter(string excelFile, string templateFile)
+  private readonly bool _pasteAsShape;
+
+  public Converter(string excelFile, string templateFile, bool pasteAsShape)
   {
+    _pasteAsShape = pasteAsShape;
     _excelFile = excelFile;
     _templateFile = templateFile;
   }
 
-  public async Task Convert()
+  public Presentation Convert()
   {
     Execute(() => Excel = new ExcelApp());
     Execute(() => PowerPoint = new PowerPointApp());
@@ -32,8 +34,10 @@ public class Converter : ViewModelBase
 
     IterateAndCreateSlides();
     
-    Schedule.Close();
+    Schedule.Close(0);
     Excel.Quit();
+
+    return Result;
   }
 
   private void IterateAndCreateSlides()
@@ -48,7 +52,7 @@ public class Converter : ViewModelBase
       var footerCell = ProcessSheet.Range[$"E{rowNum}"];
       var authorCell = ProcessSheet.Range[$"F{rowNum}"];
       var copyrightCell = ProcessSheet.Range[$"G{rowNum}"];
-      var converter = new SingleRowConverter(typeCell, titleCell, contentCell, footerCell, authorCell, copyrightCell, CustomLayouts);
+      var converter = new SingleRowConverter(typeCell, titleCell, contentCell, footerCell, authorCell, copyrightCell, CustomLayouts, _pasteAsShape);
       converter.Convert(Result, Execute);
     }
   }
