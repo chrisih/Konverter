@@ -60,13 +60,7 @@ public class SingleRowConverter
   private Slide CreateTargetSlide()
   {
     var idx = _presentation.Slides.Count + 1;
-    var targetSlide = _presentation.Slides.Add(idx, PpSlideLayout.ppLayoutBlank);
-    if (_layout.Shapes.Count > 0)
-    {
-      _layout.Shapes.Range().Copy();
-      targetSlide.Shapes.Paste();
-      Clipboard.Clear();
-    }
+    var targetSlide = _presentation.Slides.AddSlide(idx, _layout); // PpSlideLayout.ppLayoutBlank
     return targetSlide;
   }
 
@@ -175,7 +169,7 @@ public class SingleRowConverter
     _iterator(() => { });
 
     var targetSlide = CreateTargetSlide();
-    var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
+    var shapes = new List<Shape>(targetSlide.Shapes.Placeholders.OfType<Shape>());
 
     foreach (Shape shape in shapes)
     {

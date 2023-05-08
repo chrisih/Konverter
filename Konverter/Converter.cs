@@ -21,7 +21,7 @@ public class Converter : ViewModelBase
     _templateFile = templateFile;
   }
 
-  public Presentation Convert()
+  public Presentation Convert(PpSlideSizeType? type = null)
   {
     Execute(() => Excel = new ExcelApp());
     Execute(() => PowerPoint = new PowerPointApp());
@@ -29,6 +29,8 @@ public class Converter : ViewModelBase
     Execute(() => Schedule = Excel.Workbooks.Open(_excelFile));
     Execute(() => Result = PowerPoint.Presentations.Add(MsoTriState.msoCTrue));
     Execute(() => Result.ApplyTemplate(_templateFile));
+    if(type != null)
+      Result.PageSetup.SlideSize = type.Value;
     Execute(() => ProcessSheet = Schedule.Worksheets[2] as Worksheet);
     Execute(() => CustomLayouts = GetLayouts().ToList());
 

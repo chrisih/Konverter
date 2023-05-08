@@ -71,15 +71,13 @@ namespace Konverter
       if (File.Exists(StreamTemplateFileName))
       {
         Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName, false);
-        var presentation = Converter.Convert();
-        presentation.Slides[4].Shapes.Range().Export(@"C:\Users\chris\source\repos\chrisih\Konverter\Konverter\ppt.png", ShapeFormat.ppShapeFormatPNG, 0, 0, ExportMode.ppClipRelativeToSlide);
+        Converter.Convert();
       }
 
       if (File.Exists(BeamerTemplateFileName))
       {
         Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName, true);
-        var presentation = Converter.Convert();
-        presentation.PageSetup.SlideSize = Microsoft.Office.Interop.PowerPoint.PpSlideSizeType.ppSlideSizeOnScreen;
+        Converter.Convert(PpSlideSizeType.ppSlideSizeOnScreen);
       }
     }
 

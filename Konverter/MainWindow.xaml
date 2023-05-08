@@ -39,6 +39,6 @@
       <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BeamerTemplateFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
       <Button Grid.Row="2" Grid.Column="2" Content="..." Command="{Binding BrowseBeamerCommand}" MaxWidth="100" Margin="5" />
 
-      <Button Grid.Row="3" Content="PowerPoints erzeugen" Command="{Binding CreateCommand}" MaxWidth="100" Margin="5" />
+      <Button Grid.Row="3" Content="PowerPoints erzeugen" Command="{Binding CreateCommand}" MaxWidth="200" Margin="5" />
     </Grid>
 </Window>
