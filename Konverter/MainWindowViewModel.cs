@@ -70,13 +70,13 @@ namespace Konverter
     {
       if (File.Exists(StreamTemplateFileName))
       {
-        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName, false);
+        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName);
         Converter.Convert();
       }
 
       if (File.Exists(BeamerTemplateFileName))
       {
-        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName, true);
+        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName);
         Converter.Convert(PpSlideSizeType.ppSlideSizeOnScreen);
       }
     }

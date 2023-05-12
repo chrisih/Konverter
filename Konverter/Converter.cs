@@ -12,11 +12,9 @@ public class Converter : ViewModelBase
 {
   private readonly string _excelFile;
   private readonly string _templateFile;
-  private readonly bool _pasteAsShape;
-
-  public Converter(string excelFile, string templateFile, bool pasteAsShape)
+  
+  public Converter(string excelFile, string templateFile)
   {
-    _pasteAsShape = pasteAsShape;
     _excelFile = excelFile;
     _templateFile = templateFile;
   }
@@ -54,7 +52,7 @@ public class Converter : ViewModelBase
       var footerCell = ProcessSheet.Range[$"E{rowNum}"];
       var authorCell = ProcessSheet.Range[$"F{rowNum}"];
       var copyrightCell = ProcessSheet.Range[$"G{rowNum}"];
-      var converter = new SingleRowConverter(typeCell, titleCell, contentCell, footerCell, authorCell, copyrightCell, CustomLayouts, _pasteAsShape);
+      var converter = new SingleRowConverter(typeCell, titleCell, contentCell, footerCell, authorCell, copyrightCell, CustomLayouts);
       converter.Convert(Result, Execute);
     }
   }
