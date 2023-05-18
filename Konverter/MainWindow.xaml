@@ -12,7 +12,8 @@
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        SizeToContent="WidthAndHeight"
+        Title="MainWindow" Height="450" Width="840">
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
@@ -24,21 +25,25 @@
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
       <Label Grid.Row="0" Grid.Column="0" Content="Excel Ablauf" Margin="5" />
       <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ExcelSheetFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
-      <Button Grid.Row="0" Grid.Column="2" Content="..." Command="{Binding BrowseExcelCommand}" MaxWidth="100" Margin="5" />
+      <Button Grid.Row="0" Grid.Column="2" Content="Andere Vorlage" Command="{Binding BrowseExcelCommand}" Margin="5" />
+      <Button Grid.Row="0" Grid.Column="3" Content="Öffnen" Command="{Binding OpenExcelCommand}" Margin="5" />
 
       <Label Grid.Row="1" Grid.Column="0" Content="POTX Vorlage Stream" Margin="5" />
       <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StreamTemplateFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
-      <Button Grid.Row="1" Grid.Column="2" Content="..." Command="{Binding BrowseStreamCommand}" MaxWidth="100" Margin="5" />
+      <Button Grid.Row="1" Grid.Column="2" Content="Andere Vorlage" Command="{Binding BrowseStreamCommand}" Margin="5" />
+      <Button Grid.Row="1" Grid.Column="3" Content="Öffnen" Command="{Binding OpenStreamCommand}" Margin="5" />
 
       <Label Grid.Row="2" Grid.Column="0" Content="POTX Vorlage Beamer" Margin="5" />
       <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BeamerTemplateFileName}" MinWidth="400" HorizontalAlignment="Stretch" Margin="5" />
-      <Button Grid.Row="2" Grid.Column="2" Content="..." Command="{Binding BrowseBeamerCommand}" MaxWidth="100" Margin="5" />
-
+      <Button Grid.Row="2" Grid.Column="2" Content="Andere Vorlage" Command="{Binding BrowseBeamerCommand}" Margin="5" />
+      <Button Grid.Row="2" Grid.Column="3" Content="Öffnen" Command="{Binding OpenBeamerCommand}" Margin="5" />
+      
       <Button Grid.Row="3" Content="PowerPoints erzeugen" Command="{Binding CreateCommand}" MaxWidth="200" Margin="5" />
     </Grid>
 </Window>

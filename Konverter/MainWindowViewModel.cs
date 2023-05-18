@@ -2,10 +2,9 @@
 using System.Windows.Input;
 using DevExpress.Mvvm;
 using DevExpress.Mvvm.UI;
-using ShapeFormat = Microsoft.Office.Interop.PowerPoint.PpShapeFormat;
-using ExportMode= Microsoft.Office.Interop.PowerPoint.PpExportMode;
-using System.Windows.Shapes;
 using Microsoft.Office.Interop.PowerPoint;
+using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
+using ExcelApp = Microsoft.Office.Interop.Excel.Application;
 
 namespace Konverter
 {
@@ -16,11 +15,40 @@ namespace Konverter
       BrowseExcelCommand = new DelegateCommand(BrowseExcel);
       BrowseStreamCommand = new DelegateCommand(BrowseStream);
       BrowseBeamerCommand = new DelegateCommand(BrowseBeamer);
+      OpenExcelCommand = new DelegateCommand(OpenExcel);
+      OpenStreamCommand = new DelegateCommand(OpenStream);
+      OpenBeamerCommand = new DelegateCommand(OpenBeamer);
       CreateCommand = new AsyncCommand(Create, CanCreate);
 
       ExcelSheetFileName = Properties.Settings.Default.ExcelTemplate;
       StreamTemplateFileName = Properties.Settings.Default.StreamTemplate;
       BeamerTemplateFileName = Properties.Settings.Default.BeamerTemplate;
+    }
+
+    public ICommand OpenBeamerCommand { get; }
+
+    private void OpenBeamer()
+    {
+      var app = new PowerPointApp();
+      app.Presentations.Open(BeamerTemplateFileName);
+    }
+
+    public ICommand OpenStreamCommand { get; }
+
+    private void OpenStream()
+    {
+      var app = new PowerPointApp();
+      app.Presentations.Open(StreamTemplateFileName);
+    }
+
+    public ICommand OpenExcelCommand { get; }
+
+    private void OpenExcel()
+    {
+      var app = new ExcelApp();
+      var workbook = app.Workbooks.Open(ExcelSheetFileName);
+      app.Visible = true;
+      app.WindowState = Microsoft.Office.Interop.Excel.XlWindowState.xlNormal;
     }
 
     public ICommand BrowseExcelCommand { get; }
