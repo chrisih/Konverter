@@ -1,49 +1,45 @@
-﻿using Dropbox.Api.Files;
-using Dropbox.Api;
+﻿using Konverter.Models;
+using Konverter.Services;
+using Konverter.Services.Abstraction;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System.Windows;
-using static Dropbox.Api.TeamLog.EventCategory;
-using System.Net.Http;
 
 namespace Konverter
 {
-  /// <summary>
-  /// Interaction logic for App.xaml
-  /// </summary>
   public partial class App : Application
   {
-    #region Variables  
-    private DropboxClient DBClient;
-    private ListFolderArg DBFolders;
-    private string oauth2State;
-    private const string RedirectUri = "https://localhost/authorize"; // Same as we have configured Under [Application] -> settings -> redirect URIs.  
-    #endregion
+    private static IHost ServiceHost { get; set; }
+
+    public static T GetService<T>() where T : notnull => ServiceHost.Services.GetRequiredService<T>();
 
     public App()
     {
-      Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, "00k3px1id0wizbq", RedirectUri, state: oauth2State);
-      var AuthenticationURL = authorizeUri.AbsoluteUri.ToString();
+      InitializeComponent();
 
-      //var login = new Login("00k3px1id0wizbq", AuthenticationURL, oauth2State);
-      //login.ShowDialog();
-      //if (login.Result)
+      var builder = Host.CreateDefaultBuilder();
+
+      builder.ConfigureAppConfiguration((config) =>
       {
-        //var AccessToken = login.AccessToken;
-        //DropboxClientConfig CC = new DropboxClientConfig("kghuelben", 1);
-        //HttpClient HTC = new HttpClient();
-        //HTC.Timeout = TimeSpan.FromMinutes(10); // set timeout for each ghttp request to Dropbox API.  
-        //CC.HttpClient = HTC;
+        config.AddJsonFile("appsettings.json");
+      });
 
-        //var AccessToken = "sl.BeGn-B1CjyJJ3ofDoH22prqpPcJFaAbUTSQtMEX81Jd_g7H8fysjNOt_RX-U_kcsL2ILBYscviWEkenYNnhVJM5sFGN9GwSQejc0j6uBceLQWhaeeMuE0YxsfABvahaiM4KsmIM";
+      builder.ConfigureServices((config, services) =>
+      {
+        services.Configure<DropboxConfig>(config.Configuration.GetSection("Dropbox"));
+        services.Configure<ExcelConfig>(config.Configuration.GetSection("Excel"));
+        services.Configure<PowerpointConfig>(config.Configuration.GetSection("Powerpoint"));
+        services.Configure<ConverterConfig>(config.Configuration.GetSection("Converter"));
 
-        //DBClient = new DropboxClient(AccessToken, CC);
-        //GetFolders();
-      }
-    }
+        services.AddSingleton<IDropboxService, DropboxService>();
+        services.AddSingleton<IExcelService, ExcelService>();
+        services.AddSingleton<IPowerpointService, PowerpointService>();
+        services.AddSingleton<IConverterService, ConverterService>();
+      });
 
-    private async void GetFolders()
-    {
-      var sharedLink = new SharedLink("https://www.dropbox.com/sh/c4tuhbjz4p0npv4/AACURQzuxX8rj8RFRZSfSlzRa?dl=0");
-      var sharedFiles = await DBClient.Files.ListFolderAsync(path: "", sharedLink: sharedLink);
+      ServiceHost = builder.Build();
+      ServiceHost.Start();
     }
   }
 }

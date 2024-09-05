@@ -2,9 +2,8 @@
 using Microsoft.Office.Interop.PowerPoint;
 using Range = Microsoft.Office.Interop.Excel.Range;
 using Shape = Microsoft.Office.Interop.PowerPoint.Shape;
-using System.Windows;
 using System.IO;
-using DevExpress.Mvvm.Native;
+using TextFrame2 = Microsoft.Office.Interop.PowerPoint.TextFrame2;
 
 namespace Konverter;
 
@@ -12,10 +11,10 @@ public class SingleRowConverter
 {
   private readonly CustomLayout _layout;
   private readonly string? _content;
-  private readonly string? _title;
+  private string? _title;
   private readonly string? _footer;
-  private readonly string? _author;
-  private readonly string? _copyright;
+  private string? _author;
+  private string? _copyright;
   private Presentation _presentation;
   private Action<Action> _iterator;
 
@@ -68,32 +67,73 @@ public class SingleRowConverter
     // no file --> show dummy slide
     if (string.IsNullOrWhiteSpace(_content) || !File.Exists(_content))
     {
-      var targetSlide = CreateTargetSlide();
-      var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
-      foreach (Shape shape in shapes)
-        SetBasicShapeValues(shape);
+      ShowDummySlide();
       return;
     }
 
     _iterator(() => { });
     var toImport = _presentation.Application.Presentations.Open(_content, MsoTriState.msoCTrue, MsoTriState.msoCTrue, MsoTriState.msoFalse);
 
+    // check if powerpoint contains sheet music
+    GetSheetMusicData(toImport);
+
     // import as image
     foreach (Slide sourceSlide in toImport.Slides)
     {
-      var targetSlide = CreateTargetSlide();
-      _imageName = Path.GetTempFileName() + ".png";
-      sourceSlide.Export(_imageName, "PNG", (int)targetSlide.Master.Width * 2, (int)targetSlide.Master.Height * 2);
-
-      var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
-
-      foreach (Shape shape in shapes)
-      {
-        SetBasicShapeValues(shape);
-      }
+      ImportSlideAsImage(sourceSlide);
     }
 
     toImport.Close();
+  }
+
+  private void ImportSlideAsImage(Slide sourceSlide)
+  {
+    var targetSlide = CreateTargetSlide();
+    _imageName = Path.GetTempFileName() + ".png";
+    sourceSlide.Export(_imageName, "PNG", (int)targetSlide.Master.Width * 2, (int)targetSlide.Master.Height * 2);
+
+    var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
+
+    foreach (Shape shape in shapes)
+    {
+      SetBasicShapeValues(shape);
+    }
+  }
+
+  private void ShowDummySlide()
+  {
+    var targetSlide = CreateTargetSlide();
+    var shapes = new List<Shape>(targetSlide.Shapes.OfType<Shape>());
+    foreach (Shape shape in shapes)
+      SetBasicShapeValues(shape);
+  }
+
+  private void GetSheetMusicData(Presentation toImport)
+  {
+    try
+    {
+      if (toImport.Slides[1].Shapes.Count >= 3)
+      {
+        TextFrame2 topmost = null;
+        foreach (Shape shape in toImport.Slides[1].Shapes)
+        {
+          if (shape.TextFrame2.TextRange.Text.Contains("CCLI", StringComparison.InvariantCultureIgnoreCase))
+          {
+            _copyright = shape.TextFrame2.TextRange.Text;
+          }
+          else if (shape.TextFrame2.TextRange.Text.Contains("Text", StringComparison.InvariantCultureIgnoreCase))
+          {
+            _author = shape.TextFrame2.TextRange.Text;
+          }
+          else if (shape.TextFrame2.MarginTop < (topmost?.MarginTop ?? 1000))
+          {
+            topmost = shape.TextFrame2;
+            _title = shape.TextFrame2.TextRange.Text;
+          }
+        }
+      }
+    }
+    catch { }
   }
 
   private string _imageName;

@@ -2,9 +2,9 @@
 using System.Windows.Input;
 using DevExpress.Mvvm;
 using DevExpress.Mvvm.UI;
-using Microsoft.Office.Interop.PowerPoint;
 using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
 using ExcelApp = Microsoft.Office.Interop.Excel.Application;
+using Konverter.Services.Abstraction;
 
 namespace Konverter
 {
@@ -96,23 +96,9 @@ namespace Konverter
 
     private async Task Create()
     {
-      if (File.Exists(StreamTemplateFileName))
-      {
-        Converter = new Converter(ExcelSheetFileName, StreamTemplateFileName);
-        Converter.Convert();
-      }
+      var converter = App.GetService<IConverterService>();
 
-      if (File.Exists(BeamerTemplateFileName))
-      {
-        Converter = new Converter(ExcelSheetFileName, BeamerTemplateFileName);
-        Converter.Convert(PpSlideSizeType.ppSlideSizeOnScreen);
-      }
-    }
-
-    public Converter Converter
-    {
-      get => GetValue<Converter>();
-      set => SetValue(value);
+      var presentations = converter.Convert(ExcelSheetFileName);
     }
 
     public string ExcelSheetFileName
