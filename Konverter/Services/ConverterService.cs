@@ -29,7 +29,7 @@ namespace Konverter.Services
       _config = config.Value;
       _pptConfig = pptConfig.Value;
       _pptApp = _pptSvc.CreatePowerpointApp();
-      _excelSvc.CreateExcelApp();
+      _excelApp = _excelSvc.CreateExcelApp();
     }
 
     private IEnumerable<CustomLayout> GetCustomLayouts(Presentation presentation) => presentation.SlideMaster.CustomLayouts.OfType<CustomLayout>();

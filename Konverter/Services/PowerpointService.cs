@@ -29,7 +29,14 @@ namespace Konverter.Services
 
     public void ApplyTemplate(Presentation presentation, string template)
     {
-      presentation.ApplyTemplate(_config.CurrentValue.PresentationTemplates.Single(t => t.TemplateName == template).TemplatePath);
+      var path = _config.CurrentValue.PresentationTemplates.Single(t => t.TemplateName == template).TemplatePath;
+      if(!System.IO.Path.IsPathRooted(path))
+        path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, path);
+      if(!System.IO.File.Exists(path))
+      {
+        // error
+      }
+      presentation.ApplyTemplate(path);
     }
 
     public void SetSize(PpSlideSizeType size, Presentation presentation)
