@@ -31,8 +31,10 @@ namespace Konverter
         services.Configure<ExcelConfig>(config.Configuration.GetSection("Excel"));
         services.Configure<PowerpointConfig>(config.Configuration.GetSection("Powerpoint"));
         services.Configure<ConverterConfig>(config.Configuration.GetSection("Converter"));
+        services.Configure<OnedriveConfig>(config.Configuration.GetSection("OneDrive"));
 
         services.AddSingleton<IDropboxService, DropboxService>();
+        services.AddSingleton<IOnedriveService, OnedriveService>();
         services.AddSingleton<IExcelService, ExcelService>();
         services.AddSingleton<IPowerpointService, PowerpointService>();
         services.AddSingleton<IConverterService, ConverterService>();

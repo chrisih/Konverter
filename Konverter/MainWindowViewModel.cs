@@ -52,7 +52,7 @@ namespace Konverter
     {
       var converter = App.GetService<IConverterService>();
 
-      var presentations = converter.Convert(ExcelSheetFileName).ToList();
+      await converter.Convert(ExcelSheetFileName);
     }
 
     public string ExcelSheetFileName

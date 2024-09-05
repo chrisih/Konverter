@@ -18,15 +18,18 @@ namespace Konverter.Services
     private readonly IPowerpointService _pptSvc;
     private readonly ConverterConfig _config;
     private readonly PowerpointConfig _pptConfig;
+    private readonly IOnedriveService _onedriveSvc;
 
     private PowerPointApp _pptApp;
     private ExcelApp _excelApp;
 
-    public ConverterService(IOptionsSnapshot<ConverterConfig> config, IOptionsSnapshot<PowerpointConfig> pptConfig, IExcelService excelSvc, IPowerpointService pptSvc)
+    public ConverterService(IOptionsSnapshot<ConverterConfig> config, IOptionsSnapshot<PowerpointConfig> pptConfig, IExcelService excelSvc, IPowerpointService pptSvc, IOnedriveService onedriveSvc)
     {
       _excelSvc = excelSvc;
       _pptSvc = pptSvc;
       _config = config.Value;
+      _onedriveSvc = onedriveSvc;
+
       _pptConfig = pptConfig.Value;
       _pptApp = _pptSvc.CreatePowerpointApp();
       _excelApp = _excelSvc.CreateExcelApp();
@@ -34,7 +37,7 @@ namespace Konverter.Services
 
     private IEnumerable<CustomLayout> GetCustomLayouts(Presentation presentation) => presentation.SlideMaster.CustomLayouts.OfType<CustomLayout>();
 
-    public IEnumerable<Presentation> Convert(string excelfile)
+    public async Task Convert(string excelfile)
     {
       var workbook = _excelSvc.OpenWorkbook(_excelApp, excelfile);
       var schedule = _excelSvc.GetWorksheet(workbook, 2);
@@ -51,7 +54,7 @@ namespace Konverter.Services
           AddSlide(presentation, slideTemplate);
         }
 
-        yield return presentation;
+        _onedriveSvc.Save(presentation);
       }
     }
 
