@@ -2,10 +2,8 @@
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Extensions.Msal;
-using Microsoft.Identity.Client.NativeInterop;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Diagnostics;
-using static Dropbox.Api.TeamLog.ActorLogInfo;
 
 namespace Konverter.Services
 {
