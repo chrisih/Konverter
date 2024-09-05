@@ -1,4 +1,5 @@
-﻿using Konverter.Models;
+﻿using DevExpress.Mvvm.POCO;
+using Konverter.Models;
 using Konverter.Services;
 using Konverter.Services.Abstraction;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,9 @@ namespace Konverter
       });
 
       ServiceHost = builder.Build();
+
+      var svc = ServiceHost.Services.GetRequiredService<IOnedriveService>();
+
       ServiceHost.Start();
     }
   }
