@@ -9,17 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.12.0" />
     <PackageReference Include="DevExpressMvvm" Version="23.2.3" />
     <PackageReference Include="Dropbox.Api" Version="7.0.0" />
-    <PackageReference Include="MaterialDesignThemes" Version="5.0.0" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="4.64.0" />
-    <PackageReference Include="Microsoft.Identity.Client.Broker" Version="4.64.0" />
-    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.64.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.57.0" />
+    <PackageReference Include="Microsoft.Identity.Client.Desktop" Version="4.64.0" />
     <PackageReference Include="Microsoft.Office.Interop.Excel" Version="15.0.4795.1001" />
     <PackageReference Include="Microsoft.Office.Interop.PowerPoint" Version="15.0.4420.1018" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2478.35" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2739.15" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 
   <ItemGroup>

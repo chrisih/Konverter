@@ -2,9 +2,9 @@
 using System.Windows.Input;
 using DevExpress.Mvvm;
 using DevExpress.Mvvm.UI;
-using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
 using ExcelApp = Microsoft.Office.Interop.Excel.Application;
 using Konverter.Services.Abstraction;
+using Konverter.Services;
 
 namespace Konverter
 {
@@ -50,6 +50,9 @@ namespace Konverter
 
     private async Task Create()
     {
+      var onedrive = App.GetService<IOnedriveService>();
+      await onedrive.Login();
+
       var converter = App.GetService<IConverterService>();
 
       await converter.Convert(ExcelSheetFileName);

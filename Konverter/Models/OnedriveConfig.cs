@@ -6,9 +6,6 @@
     public string ClientSecret { get; set; } 
     public string TenantId { get; set; } 
 
-    public List<string> Scopes { get; set; } = new List<string>
-    {
-      "https://graph.microsoft.com/.default"
-    };
+    public List<string> Scopes { get; set; }
   }
 }

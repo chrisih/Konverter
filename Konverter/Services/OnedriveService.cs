@@ -1,67 +1,145 @@
-﻿using Konverter.Models;
+﻿using System.IO;
+using System.Security.Cryptography;
+using Konverter.Models;
 using Microsoft.Extensions.Options;
+using Microsoft.Graph;
 using Microsoft.Identity.Client;
-using Microsoft.Identity.Client.Extensions.Msal;
+using Microsoft.Identity.Client.Desktop;
+using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Office.Interop.PowerPoint;
-using System.Diagnostics;
 
 namespace Konverter.Services
 {
   public interface IOnedriveService
   {
+    Task<AuthenticationResult> Login();
     Task Save(Presentation presentation);
   }
 
   public class OnedriveService : IOnedriveService
   {
-    public OnedriveService(IOptionsMonitor<OnedriveConfig> config) 
+    private readonly IOptionsMonitor<OnedriveConfig> _config;
+
+    public OnedriveService(IOptionsMonitor<OnedriveConfig> config)
     {
-      WindowsBrokerOptions brokerOptions = new WindowsBrokerOptions();
-
-      var _clientApp = PublicClientApplicationBuilder.Create(config.CurrentValue.ClientId)
-          .WithAuthority($"https://login.microsoftonline.com/{config.CurrentValue.TenantId}")
-          .WithRedirectUri("http://localhost:54448")
-          .WithWindowsBrokerOptions(brokerOptions)
-          .Build();
-
-      MsalCacheHelper cacheHelper = CreateCacheHelperAsync().GetAwaiter().GetResult();
-
-      // Let the cache helper handle MSAL's cache, otherwise the user will be prompted to sign-in every time.
-      cacheHelper.RegisterCache(_clientApp.UserTokenCache);
-      
-      var accounts = _clientApp.GetAccountsAsync().GetAwaiter().GetResult();
-      AuthenticationResult authResult = null;
-
-      if(!accounts.Any())
-      {
-        authResult = _clientApp.AcquireTokenInteractive(config.CurrentValue.Scopes).ExecuteAsync().GetAwaiter().GetResult();
-      }
-      else
-      {
-        authResult = _clientApp.AcquireTokenSilent(config.CurrentValue.Scopes, accounts.First()).ExecuteAsync().GetAwaiter().GetResult();
-      }
-
+      _config = config;
     }
 
-    private static async Task<MsalCacheHelper> CreateCacheHelperAsync()
+    public async Task<AuthenticationResult> Login()
     {
-      // Since this is a WPF application, only Windows storage is configured
-      var storageProperties = new StorageCreationPropertiesBuilder(
-                        System.Reflection.Assembly.GetExecutingAssembly().GetName().Name + ".msalcache.bin",
-                        MsalCacheHelper.UserRootDirectory)
-                          .Build();
+      var app = PublicClientApplicationBuilder
+                .Create(_config.CurrentValue.ClientId)
+                .WithWindowsDesktopFeatures(new BrokerOptions(BrokerOptions.OperatingSystems.Windows) {ListOperatingSystemAccounts = true})
+                .WithDefaultRedirectUri()
+                .Build();
+      
+      var atp = new IntegratedWindowsTokenProvider(_config.CurrentValue.ClientId, _config.CurrentValue.TenantId, _config.CurrentValue.Scopes);
+      var provider = new BaseBearerTokenAuthenticationProvider(atp);
+      
+      TokenCacheHelper.EnableSerialization(app.UserTokenCache);
 
-      MsalCacheHelper cacheHelper = await MsalCacheHelper.CreateAsync(
-                  storageProperties,
-                  new TraceSource("MSAL.CacheTrace"))
-               .ConfigureAwait(false);
+      var _client = new GraphServiceClient(provider);
 
-      return cacheHelper;
+      var accounts = await app.GetAccountsAsync();
+      
+      AuthenticationResult token = null;
+
+      try
+      {
+        token = await app.AcquireTokenSilent(_config.CurrentValue.Scopes, accounts.FirstOrDefault()).ExecuteAsync();
+      }
+      catch (MsalServiceException ex)
+      {
+        token = await app.AcquireTokenInteractive(_config.CurrentValue.Scopes).ExecuteAsync();
+      }
+      return token;
     }
 
     public async Task Save(Presentation presentation)
     {
 
+    }
+  }
+
+  public class IntegratedWindowsTokenProvider : IAccessTokenProvider
+{
+    private readonly IPublicClientApplication publicClient;
+    private readonly string[] _scopes;
+    
+    public IntegratedWindowsTokenProvider(string clientId, string tenantId, IEnumerable<string> scopes)
+    { 
+      _scopes = scopes.ToArray();
+
+      publicClient = PublicClientApplicationBuilder
+          .Create(clientId)
+          .WithTenantId(tenantId)
+          .Build();
+
+        AllowedHostsValidator = new AllowedHostsValidator();
+    }
+
+    /// <summary>
+    /// Gets an <see cref="AllowedHostsValidator"/> that validates if the
+    /// target host of a request is allowed for authentication.
+    /// </summary>
+    public AllowedHostsValidator AllowedHostsValidator { get; }
+
+    /// <inheritdoc/>
+    public async Task<string> GetAuthorizationTokenAsync(
+        Uri uri,
+        Dictionary<string, object>? additionalAuthenticationContext = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await publicClient
+            .AcquireTokenByIntegratedWindowsAuth(_scopes)
+            .ExecuteAsync(cancellationToken);
+        return result.AccessToken;
+    }
+}
+
+  static class TokenCacheHelper
+  {
+    static TokenCacheHelper()
+    {
+      try
+      {
+        CacheFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ".msalcache.bin3");
+      }
+      catch (InvalidOperationException)
+      {
+        CacheFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location + ".msalcache.bin3";
+      }
+    }
+
+    public static string CacheFilePath { get; private set; }
+
+    private static readonly object FileLock = new object();
+
+    public static void BeforeAccessNotification(TokenCacheNotificationArgs args)
+    {
+      lock (FileLock)
+      {
+        args.TokenCache.DeserializeMsalV3(File.Exists(CacheFilePath)
+                ? ProtectedData.Unprotect(File.ReadAllBytes(CacheFilePath), null, DataProtectionScope.CurrentUser)
+                : null);
+      }
+    }
+
+    public static void AfterAccessNotification(TokenCacheNotificationArgs args)
+    {
+      if (args.HasStateChanged)
+      {
+        lock (FileLock)
+        {
+          File.WriteAllBytes(CacheFilePath, ProtectedData.Protect(args.TokenCache.SerializeMsalV3(), null, DataProtectionScope.CurrentUser));
+        }
+      }
+    }
+
+    internal static void EnableSerialization(ITokenCache tokenCache)
+    {
+      tokenCache.SetBeforeAccess(BeforeAccessNotification);
+      tokenCache.SetAfterAccess(AfterAccessNotification);
     }
   }
 }
