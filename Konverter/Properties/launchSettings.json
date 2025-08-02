@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Konverter": {
+      "commandName": "Project",
+      "commandLineArgs": "--excelFile C:\\Users\\chris\\source\\repos\\chrisih\\Konverter\\Konverter\\GoDi_Plan.xlsm --template C:\\Users\\chris\\Desktop\\Konverter\\Beamer_Master_Sabi.potx --template C:\\Users\\chris\\Desktop\\Konverter\\Stream_Master_Sabi.potx"
+    }
+  }
+}
