@@ -1,9 +1,12 @@
 ﻿using System.IO;
-using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
-using Microsoft.Office.Interop.PowerPoint;
-using Microsoft.Extensions.Options;
-using Konverter.Services.Abstraction;
 using Konverter.Models;
+using Konverter.Services.Abstraction;
+using Microsoft.Extensions.Options;
+using Microsoft.Office.Core;
+using Microsoft.Office.Interop.PowerPoint;
+using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
+using TextFrame = Microsoft.Office.Interop.PowerPoint.TextFrame;
 
 namespace Konverter.Services
 {
@@ -11,35 +14,107 @@ namespace Konverter.Services
   {
     private readonly IOptionsMonitor<PowerpointConfig> _config;
     private readonly PowerPointApp _pptApp;
+    private readonly List<FieldConversionSetting> _settings;
 
-    public PowerpointService(IOptionsMonitor<PowerpointConfig> config)
+    public PowerpointService(IOptionsMonitor<PowerpointConfig> config, IOptionsSnapshot<ConverterConfig> converterConfig)
     {
       _config = config;
+      _settings = converterConfig.Value.FieldMappings;
       _pptApp = new PowerPointApp();
     }
 
-    public Presentation CreatePresentation()
+    public void AddSlides(Presentation presentation, IEnumerable<SlideTemplateFromExcel> templates)
     {
-      return _pptApp.Presentations.Add(Microsoft.Office.Core.MsoTriState.msoCTrue);
+      foreach (var template in templates)
+      {
+        var filledTemplates = FillTemplateAndExportSlides(template);
+
+        foreach (var slideTemplate in filledTemplates)
+        {
+          var targetSlide = CreateTargetSlide(presentation, slideTemplate.PptLayoutReference);
+          foreach (PowerPointShape shape in targetSlide.Shapes)
+          {
+            SetBasicShapeValues(presentation, shape, slideTemplate);
+          }
+        }
+      }
     }
 
-    public void SetSize(Presentation presentation, FileInfo file)
+    private void SetBasicShapeValues(Presentation presentation, PowerPointShape shape, SlideTemplateFromExcel template)
     {
-      var template = _pptApp.Presentations.Open(file.FullName, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoFalse);
+      var shapeName = GetShapeName(presentation, shape, template.PptLayoutReference);
+      if (shapeName == null)
+        return;
+
+      var shapeType = _settings.FirstOrDefault(f => f.PowerpointFieldName == shapeName)?.InternalUsageType;
+
+      switch (shapeType)
+      {
+        case FieldTypes.Titel:
+          shape.TextFrame2.TextRange.Text = template.Title;
+          shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
+          break;
+        case FieldTypes.Bild:
+          if (!string.IsNullOrWhiteSpace(template.Content))
+            shape.Fill.UserPicture(template.Content);
+          break;
+        case FieldTypes.Untertitel:
+          shape.TextFrame2.TextRange.Text = template.Footer;
+          shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
+          break;
+        case FieldTypes.Inhalt:
+          shape.TextFrame2.TextRange.Text = template.Content;
+          shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
+          break;
+        case FieldTypes.Autor:
+          shape.TextFrame2.TextRange.Text = template.Author;
+          shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
+          break;
+        case FieldTypes.Copyright:
+          shape.TextFrame2.TextRange.Text = template.Copyright;
+          shape.TextFrame2.AutoSize = MsoAutoSize.msoAutoSizeTextToFitShape;
+          break;
+      }
+    }
+
+    private string? GetShapeName(Presentation presentation, PowerPointShape generatedShape, string? layoutName)
+    {
+      foreach (var shape in GetCustomLayouts(presentation, layoutName)?.Shapes?.OfType<PowerPointShape>())
+        if (shape.Top == generatedShape.Top && shape.Left == generatedShape.Left && shape.Width == shape.Width && shape.Height == shape.Height)
+          return shape.Name;
+      return null;
+    }
+
+    private Slide CreateTargetSlide(Presentation presentation, string? layoutName)
+    {
+      var idx = presentation.Slides.Count + 1;
+      var targetSlide = presentation.Slides.AddSlide(idx, GetCustomLayouts(presentation, layoutName));
+      return targetSlide;
+    }
+
+    public Presentation CreatePresentation(FileInfo templateFile)
+    {
+      var presentation = _pptApp.Presentations.Add(MsoTriState.msoCTrue);
+
+      presentation.ApplyTemplate(templateFile.FullName);
+      
+      var template = _pptApp.Presentations.Open(templateFile.FullName, MsoTriState.msoCTrue, MsoTriState.msoCTrue, MsoTriState.msoFalse);
 
       var sixteennine = template.SlideMaster.Width / template.SlideMaster.Height == (float)16 / 9;
 
       presentation.PageSetup.SlideSize = sixteennine ? PpSlideSizeType.ppSlideSizeOnScreen16x9 : template.PageSetup.SlideSize;
 
       template.Close();
+
+      return presentation;
     }
 
-    public IEnumerable<CustomLayout> GetCustomLayouts(Presentation presentation)
+    private CustomLayout? GetCustomLayouts(Presentation presentation, string layoutName)
     {
-      return presentation.SlideMaster.CustomLayouts.OfType<CustomLayout>();
+      return presentation.SlideMaster.CustomLayouts.OfType<CustomLayout>().FirstOrDefault(l => l.Name == layoutName);
     }
 
-    public IEnumerable<SlideTemplateFromExcel> TryGetPowerPointSlidesAsImage(SlideTemplateFromExcel template)
+    private IEnumerable<SlideTemplateFromExcel> FillTemplateAndExportSlides(SlideTemplateFromExcel template)
     {
       if (string.IsNullOrWhiteSpace(template.Content) || !File.Exists(template.Content))
       {
@@ -53,7 +128,7 @@ namespace Konverter.Services
         yield break;
       }
 
-      var toImport = _pptApp.Presentations.Open(template.Content, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoFalse);
+      var toImport = _pptApp.Presentations.Open(template.Content, MsoTriState.msoCTrue, MsoTriState.msoCTrue, MsoTriState.msoFalse);
 
       template = ReadFieldsFromPowerpoint(toImport, template);
 
@@ -85,7 +160,7 @@ namespace Konverter.Services
         if (toImport.Slides[1].Shapes.Count >= 3)
         {
           TextFrame topmost = null;
-          foreach (Shape shape in toImport.Slides[1].Shapes)
+          foreach (PowerPointShape shape in toImport.Slides[1].Shapes)
           {
             if (shape.TextFrame2.TextRange.Text.Contains("CCLI", StringComparison.InvariantCultureIgnoreCase))
             {

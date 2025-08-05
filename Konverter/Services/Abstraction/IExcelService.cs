@@ -7,9 +7,7 @@ namespace Konverter.Services.Abstraction
 {
   public interface IExcelService
   {
-    ExcelApp CreateExcelApp();
     Workbook OpenWorkbook(ExcelApp app, FileInfo path);
-    Worksheet GetWorksheet(Workbook workbook, int index);
-    IEnumerable<SlideTemplateFromExcel> GetSlideTemplates(Worksheet contentSheet);
+    IEnumerable<SlideTemplateFromExcel> GetSlideTemplates(FileInfo excelfile);
   }
 }

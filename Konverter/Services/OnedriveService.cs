@@ -4,14 +4,10 @@ using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Extensions.Msal;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Diagnostics;
+using Konverter.Services.Abstraction;
 
 namespace Konverter.Services
 {
-  public interface IOnedriveService
-  {
-    Task Save(Presentation presentation);
-  }
-
   public class OnedriveService : IOnedriveService
   {
     public OnedriveService(IOptionsMonitor<OnedriveConfig> config) 
@@ -57,6 +53,11 @@ namespace Konverter.Services
                .ConfigureAwait(false);
 
       return cacheHelper;
+    }
+
+    public Task Logon()
+    {
+      throw new NotImplementedException();
     }
 
     public async Task Save(Presentation presentation)

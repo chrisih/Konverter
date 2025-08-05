@@ -10,17 +10,14 @@ namespace Konverter.Services
   public class ExcelService : IExcelService
   {
     private readonly IOptionsMonitor<ExcelConfig> _config;
+    private readonly ExcelApp _app;
 
     public ExcelService(IOptionsMonitor<ExcelConfig> config)
     {
       _config = config;
+      _app = new ExcelApp();
     }
-
-    public ExcelApp CreateExcelApp()
-    {
-      return new ExcelApp();
-    }
-
+    
     public Workbook OpenWorkbook(ExcelApp app, FileInfo file)
     {
       return app.Workbooks.Open(file.FullName);
@@ -31,21 +28,26 @@ namespace Konverter.Services
       return workbook.Worksheets[index] as Worksheet;
     }
 
-    public IEnumerable<SlideTemplateFromExcel> GetSlideTemplates(Worksheet contentSheet)
+    public IEnumerable<SlideTemplateFromExcel> GetSlideTemplates(FileInfo excelFile)
     {
+      var workbook = _app.Workbooks.Open(excelFile.FullName);
+      var schedule = workbook.Worksheets[2] as Worksheet;
+
       for (int rowNum = 4; rowNum < 200; rowNum++)
       {
-        var typeCell = contentSheet.Range[$"{_config.CurrentValue.Columns["Type"]}{rowNum}"];
+        var typeCell = schedule.Range[$"{_config.CurrentValue.Columns["Type"]}{rowNum}"];
         if (typeCell.Value == null)
           continue;
-        var contentCell = contentSheet.Range[$"{_config.CurrentValue.Columns["Content"]}{rowNum}"];
-        var titleCell = contentSheet.Range[$"{_config.CurrentValue.Columns["Title"]}{rowNum}"];
-        var footerCell = contentSheet.Range[$"{_config.CurrentValue.Columns["Footer"]}{rowNum}"];
-        var authorCell = contentSheet.Range[$"{_config.CurrentValue.Columns["Author"]}{rowNum}"];
-        var copyrightCell = contentSheet.Range[$"{_config.CurrentValue.Columns["Copyright"]}{rowNum}"];
+        var contentCell = schedule.Range[$"{_config.CurrentValue.Columns["Content"]}{rowNum}"];
+        var titleCell = schedule.Range[$"{_config.CurrentValue.Columns["Title"]}{rowNum}"];
+        var footerCell = schedule.Range[$"{_config.CurrentValue.Columns["Footer"]}{rowNum}"];
+        var authorCell = schedule.Range[$"{_config.CurrentValue.Columns["Author"]}{rowNum}"];
+        var copyrightCell = schedule.Range[$"{_config.CurrentValue.Columns["Copyright"]}{rowNum}"];
 
         yield return new SlideTemplateFromExcel(typeCell, contentCell, titleCell, footerCell, authorCell, copyrightCell);
       }
+
+      workbook.Close();
     }
   }
 }

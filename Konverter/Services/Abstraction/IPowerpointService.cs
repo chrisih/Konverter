@@ -6,9 +6,7 @@ namespace Konverter.Services.Abstraction
 {
   public interface IPowerpointService
   {
-    Presentation CreatePresentation();
-    void SetSize(Presentation presentation, FileInfo file);
-    IEnumerable<SlideTemplateFromExcel> TryGetPowerPointSlidesAsImage(SlideTemplateFromExcel template);
-    IEnumerable<CustomLayout> GetCustomLayouts(Presentation presentation);
+    Presentation CreatePresentation(FileInfo templateFile);
+    void AddSlides(Presentation presentation, IEnumerable<SlideTemplateFromExcel> templates);
   }
 }

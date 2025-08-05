@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.CommandLine;
 using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace Konverter
 {
