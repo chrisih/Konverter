@@ -1,16 +1,14 @@
-﻿using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
-using Microsoft.Office.Interop.PowerPoint;
+﻿using System.IO;
 using Konverter.Models;
+using Microsoft.Office.Interop.PowerPoint;
 
 namespace Konverter.Services.Abstraction
 {
   public interface IPowerpointService
   {
-    PowerPointApp CreatePowerpointApp();
-    Presentation CreatePresentation(PowerPointApp app);
-    IEnumerable<PptTemplateConfig> GetPptTemplates();
-    void ApplyTemplate(Presentation presentation, string template);
-    void SetSize(PpSlideSizeType size, Presentation presentation);
+    Presentation CreatePresentation();
+    void SetSize(Presentation presentation, FileInfo file);
+    IEnumerable<SlideTemplateFromExcel> TryGetPowerPointSlidesAsImage(SlideTemplateFromExcel template);
     IEnumerable<CustomLayout> GetCustomLayouts(Presentation presentation);
   }
 }

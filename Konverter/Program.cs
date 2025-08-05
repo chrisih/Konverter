@@ -1,7 +1,6 @@
 ﻿using Konverter.Models;
 using Konverter.Services;
 using Konverter.Services.Abstraction;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.CommandLine;
@@ -52,7 +51,8 @@ namespace Konverter
 
       var converterService = GetService<IConverterService>();
 
-      await converterService.Convert(excelFile, powerPointTemplates);
+      foreach(var powerPointTemplate in powerPointTemplates)
+        await converterService.Convert(excelFile, powerPointTemplate);
     }
 
     private static void Startup()

@@ -1,4 +1,5 @@
-﻿using Microsoft.Office.Interop.Excel;
+﻿using System.IO;
+using Microsoft.Office.Interop.Excel;
 using ExcelApp = Microsoft.Office.Interop.Excel.Application;
 using Konverter.Models;
 using Microsoft.Extensions.Options;
@@ -8,7 +9,7 @@ namespace Konverter.Services
 {
   public class ExcelService : IExcelService
   {
-    private IOptionsMonitor<ExcelConfig> _config;
+    private readonly IOptionsMonitor<ExcelConfig> _config;
 
     public ExcelService(IOptionsMonitor<ExcelConfig> config)
     {
@@ -20,9 +21,9 @@ namespace Konverter.Services
       return new ExcelApp();
     }
 
-    public Workbook OpenWorkbook(ExcelApp app, string path)
+    public Workbook OpenWorkbook(ExcelApp app, FileInfo file)
     {
-      return app.Workbooks.Open(path);
+      return app.Workbooks.Open(file.FullName);
     }
 
     public Worksheet GetWorksheet(Workbook workbook, int index)

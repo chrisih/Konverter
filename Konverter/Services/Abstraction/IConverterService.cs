@@ -1,7 +1,9 @@
-﻿namespace Konverter.Services.Abstraction
+﻿using System.IO;
+
+namespace Konverter.Services.Abstraction
 {
   public interface IConverterService
   {
-    Task Convert(string excelfile);
+    Task Convert(FileInfo excelfile, FileInfo template);
   }
 }

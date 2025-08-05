@@ -43,8 +43,6 @@ namespace Konverter
 
       ServiceHost = builder.Build();
 
-      var svc = ServiceHost.Services.GetRequiredService<IOnedriveService>();
-
       ServiceHost.Start();
     }
   }

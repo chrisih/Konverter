@@ -1,4 +1,5 @@
-﻿using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
+﻿using System.IO;
+using PowerPointApp = Microsoft.Office.Interop.PowerPoint.Application;
 using Microsoft.Office.Interop.PowerPoint;
 using Microsoft.Extensions.Options;
 using Konverter.Services.Abstraction;
@@ -8,45 +9,103 @@ namespace Konverter.Services
 {
   public class PowerpointService : IPowerpointService
   {
-    private IOptionsMonitor<PowerpointConfig> _config;
+    private readonly IOptionsMonitor<PowerpointConfig> _config;
+    private readonly PowerPointApp _pptApp;
 
     public PowerpointService(IOptionsMonitor<PowerpointConfig> config)
     {
       _config = config;
+      _pptApp = new PowerPointApp();
     }
 
-    public PowerPointApp CreatePowerpointApp()
+    public Presentation CreatePresentation()
     {
-      return new PowerPointApp();
+      return _pptApp.Presentations.Add(Microsoft.Office.Core.MsoTriState.msoCTrue);
     }
 
-    public Presentation CreatePresentation(PowerPointApp app)
+    public void SetSize(Presentation presentation, FileInfo file)
     {
-      return app.Presentations.Add(Microsoft.Office.Core.MsoTriState.msoCTrue);
-    }
+      var template = _pptApp.Presentations.Open(file.FullName, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoFalse);
 
-    public IEnumerable<PptTemplateConfig> GetPptTemplates() => _config.CurrentValue.PresentationTemplates;
+      var sixteennine = template.SlideMaster.Width / template.SlideMaster.Height == (float)16 / 9;
 
-    public void ApplyTemplate(Presentation presentation, string template)
-    {
-      var path = _config.CurrentValue.PresentationTemplates.Single(t => t.TemplateName == template).TemplatePath;
-      if(!System.IO.Path.IsPathRooted(path))
-        path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, path);
-      if(!System.IO.File.Exists(path))
-      {
-        // error
-      }
-      presentation.ApplyTemplate(path);
-    }
+      presentation.PageSetup.SlideSize = sixteennine ? PpSlideSizeType.ppSlideSizeOnScreen16x9 : template.PageSetup.SlideSize;
 
-    public void SetSize(PpSlideSizeType size, Presentation presentation)
-    {
-      presentation.PageSetup.SlideSize = size;
+      template.Close();
     }
 
     public IEnumerable<CustomLayout> GetCustomLayouts(Presentation presentation)
     {
       return presentation.SlideMaster.CustomLayouts.OfType<CustomLayout>();
+    }
+
+    public IEnumerable<SlideTemplateFromExcel> TryGetPowerPointSlidesAsImage(SlideTemplateFromExcel template)
+    {
+      if (string.IsNullOrWhiteSpace(template.Content) || !File.Exists(template.Content))
+      {
+        yield return template;
+        yield break;
+      }
+
+      if (!template.Content.EndsWith(".ppt") || template.Content.EndsWith(".pptx"))
+      {
+        yield return template;
+        yield break;
+      }
+
+      var toImport = _pptApp.Presentations.Open(template.Content, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoCTrue, Microsoft.Office.Core.MsoTriState.msoFalse);
+
+      template = ReadFieldsFromPowerpoint(toImport, template);
+
+      foreach (Slide sourceSlide in toImport.Slides)
+      {
+        yield return CreateImageSlideTemplate(sourceSlide, template);
+      }
+
+      toImport.Close();
+    }
+
+    private SlideTemplateFromExcel CreateImageSlideTemplate(Slide sourceSlide, SlideTemplateFromExcel template)
+    {
+      var tmpImagePath = Path.GetTempFileName() + ".png";
+      sourceSlide.Export(tmpImagePath, "PNG", (int)sourceSlide.Master.Width * 2, (int)sourceSlide.Master.Height * 2);
+
+      var toReturn = template;
+      template.Content = tmpImagePath;
+
+      return toReturn;
+    }
+
+    private SlideTemplateFromExcel ReadFieldsFromPowerpoint(Presentation toImport, SlideTemplateFromExcel template)
+    {
+      var ret = template;
+
+      try
+      {
+        if (toImport.Slides[1].Shapes.Count >= 3)
+        {
+          TextFrame topmost = null;
+          foreach (Shape shape in toImport.Slides[1].Shapes)
+          {
+            if (shape.TextFrame2.TextRange.Text.Contains("CCLI", StringComparison.InvariantCultureIgnoreCase))
+            {
+              ret.Copyright = shape.TextFrame2.TextRange.Text;
+            }
+            else if (shape.TextFrame2.TextRange.Text.Contains("Text", StringComparison.InvariantCultureIgnoreCase))
+            {
+              ret.Author = shape.TextFrame2.TextRange.Text;
+            }
+            else if (shape.TextFrame2.MarginTop < (topmost?.MarginTop ?? 1000))
+            {
+              topmost = (TextFrame)shape.TextFrame2;
+              ret.Title = shape.TextFrame2.TextRange.Text;
+            }
+          }
+        }
+      }
+      catch { }
+
+      return ret;
     }
   }
 }
