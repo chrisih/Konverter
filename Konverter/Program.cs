@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using System.CommandLine;
 using System.IO;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Konverter
 {
@@ -42,7 +43,7 @@ namespace Konverter
         await RunConverter(excelFile, templates);
       });
 
-      ParseResult parseResult = rootCommand.Parse(args);
+      var parseResult = rootCommand.Parse(args);
       return await parseResult.InvokeAsync();
     }
 
@@ -66,18 +67,19 @@ namespace Konverter
       });
 
       builder.ConfigureServices((config, services) =>
-      {
-        services.Configure<DropboxConfig>(config.Configuration.GetSection("Dropbox"));
-        services.Configure<ExcelConfig>(config.Configuration.GetSection("Excel"));
-        services.Configure<ConverterConfig>(config.Configuration.GetSection("Converter"));
-        services.Configure<OnedriveConfig>(config.Configuration.GetSection("OneDrive"));
+                                {
+                                  services.AddLogging(loggingBuilder =>
+                                                      {
+                                                        loggingBuilder.ClearProviders();
+                                                        loggingBuilder.AddConsole();
+                                                      });
+                                  services.Configure<ExcelConfig>(config.Configuration.GetSection("Excel"));
+                                  services.Configure<ConverterConfig>(config.Configuration.GetSection("Converter"));
 
-        services.AddSingleton<IDropboxService, DropboxService>();
-        services.AddSingleton<IOnedriveService, OnedriveService>();
-        services.AddSingleton<IExcelService, ExcelService>();
-        services.AddSingleton<IPowerpointService, PowerpointService>();
-        services.AddSingleton<IConverterService, ConverterService>();
-      });
+                                  services.AddSingleton<IExcelService, ExcelService>();
+                                  services.AddSingleton<IPowerpointService, OpenXmlPowerpointService>();
+                                  services.AddSingleton<IConverterService, ConverterService>();
+                                });
 
       ServiceHost = builder.Build();
       ServiceHost.Start();

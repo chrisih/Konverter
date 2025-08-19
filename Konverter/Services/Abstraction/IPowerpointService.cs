@@ -1,12 +1,9 @@
-﻿using System.IO;
-using Konverter.Models;
-using Microsoft.Office.Interop.PowerPoint;
+﻿using Konverter.Models;
 
 namespace Konverter.Services.Abstraction
 {
   public interface IPowerpointService
   {
-    Presentation CreatePresentation(FileInfo templateFile);
-    void AddSlides(Presentation presentation, IEnumerable<SlideTemplateFromExcel> templates);
+    void CreatePresentationFromTemplate(string templatePath, string outputPath, IEnumerable<SlideTemplateFromExcel> partialProcessingInformation);
   }
 }

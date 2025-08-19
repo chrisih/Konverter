@@ -2,14 +2,14 @@
 {
   public class ExcelConfig
   {
-    public Dictionary<string, string> Columns { get; set; } = new Dictionary<string, string>
+    public Dictionary<string, int> Columns { get; set; } = new Dictionary<string, int>
     {
-      { "Type", "B" },
-      { "Content", "C" },
-      { "Title", "D" },
-      { "Footer", "E" },
-      { "Author", "F" },
-      { "Copyright", "G" }
+      { "Type", 0 },
+      { "Content", 1 },
+      { "Title", 2 },
+      { "Footer", 3 },
+      { "Author", 4 },
+      { "Copyright", 5 }
     };
   }
 }

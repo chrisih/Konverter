@@ -1,4 +1,4 @@
-﻿using Microsoft.Office.Core;
+﻿/*
 using Microsoft.Office.Interop.PowerPoint;
 using Range = Microsoft.Office.Interop.Excel.Range;
 using Shape = Microsoft.Office.Interop.PowerPoint.Shape;
@@ -198,3 +198,4 @@ public class SingleRowConverter
     _iterator(() => { });
   }
 }
+*/

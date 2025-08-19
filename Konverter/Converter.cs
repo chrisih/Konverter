@@ -1,4 +1,4 @@
-﻿using DevExpress.Mvvm;
+﻿/*using DevExpress.Mvvm;
 using Microsoft.Office.Core;
 using Microsoft.Office.Interop.Excel;
 using Microsoft.Office.Interop.PowerPoint;
@@ -83,3 +83,4 @@ public class Converter : ViewModelBase
     set => SetValue(value);
   }
 }
+*/
